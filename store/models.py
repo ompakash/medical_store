@@ -30,3 +30,18 @@ class Doctor(models.Model):
 
     def __str__(self):
         return self.user.username
+
+# MODEL FOR BLOGPOST
+
+class Blogpost(models.Model):
+    author = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    image = models.URLField()
+    category = models.CharField(max_length=100)
+    summary = models.CharField(max_length=1000)
+    content = models.CharField(max_length=5000)
+    draft = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
+    
