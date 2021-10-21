@@ -1,4 +1,6 @@
-{% extends 'base.html' %} {% block css %} {% endblock css %} {% block content %}
+{% extends 'base.html' %}
+{% load static %}
+ {% block css %} {% endblock css %} {% block content %}
 <div class="container">
   <div class="row">
     <!-- Blog entries-->
@@ -9,7 +11,9 @@
         <div class="card-body">
           <div class="small text-muted">{{post.category}}</div>
           <h2 class="card-title">{{post.title}}</h2>
-          <p class="card-text">
+          <button id="copyButton1" class="btn-primary btn-lg  ">Copy content</button>
+
+          <p id='text1' class="card-text">
            {{post.content}}
           </p>
         </div>
@@ -56,5 +60,11 @@
     </div>
   </div>
 </div>
+
+
+
+<script src="{% static 'store/js/script.js' %}"> </script>
+
+
 
 {% endblock content %}
