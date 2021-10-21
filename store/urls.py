@@ -12,7 +12,7 @@ urlpatterns=[
     path('bloghome',views.bloghome,name='bloghome'),
     path('mypost',views.mypost,name='mypost'),
     path('newpost',views.newpost,name='newpost'),
-    path('postview',views.postview,name='postview'),
-    path('updatepost',views.updatepost,name='updatepost'),
+    path('postview/<int:id>',views.postview,name='postview'),
+    path('updatepost/<int:id>',views.updatepost,name='updatepost'),
 
 ]
