@@ -22,6 +22,8 @@ class Patient(models.Model):
 class Doctor(models.Model):
     id = models.AutoField(primary_key=True,null=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE,null=False)
+    firstname = models.CharField(max_length=300)
+    lastname = models.CharField(max_length=300)
     image = models.URLField()
     address = models.CharField(max_length=300,null=False)
     city = models.CharField(max_length=300,null=False)
@@ -45,3 +47,12 @@ class Blogpost(models.Model):
     def __str__(self):
         return self.title
     
+#Appointment class
+class Appointment(models.Model):
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    required_speciality = models.CharField(max_length=500)
+    date_of_appointment = models.DateField(auto_now=False,auto_now_add=False)
+    start_time = models.TimeField(auto_now=False,auto_now_add=False)
+
+    def __str__(self):
+        return self.doctor.user.first_name

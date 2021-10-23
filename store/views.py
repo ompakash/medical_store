@@ -57,7 +57,8 @@ def patient(request):
             messages.info(request, "Account Created Successfully")
             return redirect('/')
 
-    return render(request, template_name='store/patient.html')
+
+    return render(request, 'store/patient.html')
 
 
 def doctor(request):
@@ -97,12 +98,13 @@ def doctor(request):
             user.set_password(password)                         
             user.save()
 
-            doctor = Doctor.objects.create(user=user,image=url,address=address,city=city,state=state,pincode=pincode)
+            doctor = Doctor.objects.create(user=user,firstname=firstname,lastname = lastname,image=url,address=address,city=city,state=state,pincode=pincode)
 
             messages.info(request, "Account Created Successfully")
             return redirect('/')
+            
 
-    return render(request, template_name='store/doctor.html')
+    return render(request, 'store/doctor.html')
 
 
 def logout_page(request):
@@ -162,15 +164,18 @@ def profile(request):
     # print(request.user)
     user_type = request.session['user_type']
     if user_type == "doctor":        
+        user_type = 'doctor'
         user_profile = Doctor.objects.get(user=request.user)
         # print(user_profile.image)
 
     if user_type == "patient":
+        user_type = 'patient'
         user_profile = Patient.objects.get(user=request.user)
 
     
     
     context = {'user_profile': user_profile}
+    print(user_type)
 
     return render(request, 'store/profile.html', context)
 
@@ -205,7 +210,7 @@ def bloghome(request):
             im_list.append(im)
 
     context = { 'mentalhealth':mh_list, 'heartdisease':hd_list, 'covid19':cd_list, 'immunization':im_list }
-    print(covid19)
+    # print(covid19)
     
     return render(request,'blog/bloghome.html',context)
 
@@ -329,3 +334,65 @@ def updatepost(request,id):
         return redirect('/mypost')
 
     return render(request, 'blog/updatepost.html',{'post':post})
+
+
+@login_required
+def doctorlist(request):
+    doctors = Doctor.objects.all()
+    # print(doctors)
+    
+    # appointment = Appointment.objects.filter(id=1).first()1
+    context = {'doctors':doctors}
+    return render(request, 'appointment/doctorlist.html',context)
+
+
+@login_required
+def appointment_form(request,id):
+    if request.method == "POST":
+        speciality = request.POST.get('speciality')
+        appointmentdate = request.POST.get('appointmentdate')
+        appointmenttime = request.POST.get('appointmenttime')
+
+        doctor = Doctor.objects.filter(id=id).first()
+
+        appointment = Appointment(doctor=doctor,required_speciality=speciality,date_of_appointment=appointmentdate,start_time=appointmenttime)
+        
+        appointment.save()
+
+        request.session['doctor_id'] = doctor.id
+        request.session['appointment_id'] = appointment.id
+        messages.success(request, 'The appointment have been scheduled successfully.')
+        # print(doctor.id)
+        # print(appointment.id)
+
+        return redirect('/appointmentdetails')
+
+    return render(request, 'appointment/appointment_form.html')
+
+
+
+@login_required
+def appointmentdetails(request):
+    doctor_id = request.session['doctor_id']     
+    appointment_id = request.session['appointment_id']     
+    doctor = Doctor.objects.filter(id=doctor_id).first()
+    appointment = Appointment.objects.filter(id=appointment_id).first()
+    start_time_of_appointment = str(appointment.start_time)
+    end_time_of_appointment = sumTime(str(appointment.start_time), '00:45:00')
+    context = {'doctor': doctor, 'appointment': appointment, 'start_time_of_appointment': start_time_of_appointment, 'end_time_of_appointment': end_time_of_appointment}
+
+    
+
+    return render(request, 'appointment/appointmentdetails.html', context)
+
+    return render(request, 'appointment/appointmentdetails.html')
+
+def sumTime(t1, t2):
+    import datetime
+    timeList = [t1, t2]
+    mysum = datetime.timedelta() # =0:00:00
+    for i in timeList:
+        (h, m, s) = i.split(':')
+        d = datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+        mysum += d
+    return str(mysum)

@@ -14,5 +14,10 @@ urlpatterns=[
     path('newpost',views.newpost,name='newpost'),
     path('postview/<int:id>',views.postview,name='postview'),
     path('updatepost/<int:id>',views.updatepost,name='updatepost'),
+    
+    path('doctorlist',views.doctorlist,name='doctorlist'),
+    path('appointment_form/<int:id>',views.appointment_form,name='appointment_form'),
+    path('appointmentdetails',views.appointmentdetails,name='appointmentdetails'),
+
 
 ]

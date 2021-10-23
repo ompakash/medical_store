@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+    <h1 class="mx-2 my-2">Appointment Form</h1>
+    <form class="mx-2 mt-2" method="post">
+        {% csrf_token %}
+        <input type="hidden" value="{{request.user}}" name="author">
+
+        <div class="mx-2 form-group my-2">
+            <p>Required speciality</p>
+            <textarea class="form-control" id="exampleFormControlTextarea1" name="speciality" rows="2"
+                placeholder="Enter Required Speciality"></textarea>
+        </div>
+
+
+        <div class=" mx-2 form-group my-2">
+            <p>Appointment Date</p>
+
+            <input type="date" class="form-control" name="appointmentdate" placeholder="Enter Required Speciality"
+                required>
+        </div>
+
+        <div class="md-form mx-2 my-2">
+            <label class="mx-2 my-2" for="time">Choose your time</label>
+
+            <input type="time" id="times" name="appointmenttime" class="form-control" required>
+          </div>
+
+        <div class="col-12 mb-3 mx-2 mt-2 my-2 d-grid gap-2 ">
+            <button type="submit" class="btn btn-success btn-xl">Book Appointment</button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock content %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+
+{% block css %}
+<!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" /> -->
+<link rel="stylesheet" href="static/store/css/appointment.css" />
+
+{% endblock css %}
+
+
+{% comment %} {% block content %}
+<div class="container mt-3">
+  <h2>Select a doctor to book a appointment</h2>
+  <form class="row g-3 mt-2" method="POST">
+    {% csrf_token %}
+    <!-- <input type="hidden" value="{{request.user}}" name="author"> -->
+    {% for doctor in doctors %}
+    <div class="col-md-4">
+      <img src="{{doctor.pic}}" />
+    </div>
+    <div class="col-md-4 mt-5">
+      <h5>{{doctor.firstname}} {{doctor.lastname}}</h5>
+    </div>
+    <div class="col-md-4 text-center">
+      <a type="submit" class="btn btn-success mt-5 btn-xl" href="/bookappointment/{{doctor.id}}">Book Appointment</a>
+    </div>
+    <!-- <div class="col-4 mb-3 d-grid gap-2 mx-auto">
+            <button type="submit" class="btn btn-success btn-xl">Upload Post</button>
+        </div> -->
+    {% endfor %}
+  </form>
+</div>
+{% endblock content %} {% endcomment %}
+
+{% block content %}
+
+<div class="row mx-2 my-2 mb-2 mt-2">
+
+{% for doctor in doctors %}
+
+<div class="card col-4 mx-2 my-2 mb-2 mt-2"  style="width: 18rem;">
+  <img class="card-img-top" src="{{doctor.image}}" alt="Card image cap">
+  <div class="card-body">
+    <h5 class="card-title">{{doctor.id}}</h5>
+    <h5 class="card-title">{{doctor.firstname}} {{doctor.lastname}}</h5>
+    <p class="card-text"></p>
+    <form action="" method="post">
+      {% csrf_token %}
+    <a href="/appointment_form/{{doctor.id}}" class="btn btn-primary">Book Appointment</a>
+  </form>
+  </div>
+</div>
+{% endfor %}
+
+</div>
+
+
+{% endblock content %}
