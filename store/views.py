@@ -7,6 +7,18 @@ from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required
 
 
+
+from google_auth_oauthlib.flow import Flow, InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from google.auth.transport.requests import Request
+import pytz
+from google.oauth2 import service_account
+
+import os
+
+
+
 # Create your views here.
 
 def home(request):
@@ -396,3 +408,53 @@ def sumTime(t1, t2):
         d = datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
         mysum += d
     return str(mysum)
+
+
+
+def Confirm_appointment(request):
+    appointment_id = request.GET.get('id')
+    appointment = Appointment.objects.get(id=appointment_id)
+   
+    print("----------------------------------")
+
+    start = datetime(
+        appointment.Date_of_Appointment.year,
+        appointment.Date_of_Appointment.month,
+        appointment.Date_of_Appointment.day,
+        appointment.Start_Time_of_Appointment.hour,
+        appointment.Start_Time_of_Appointment.minute,
+        appointment.Start_Time_of_Appointment.second,
+        appointment.Start_Time_of_Appointment.microsecond,
+
+
+    )
+    
+    GDRAT_abs_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'client_secret.json')
+    scopes = ['https://www.googleapis.com/auth/calendar']
+    flow = InstalledAppFlow.from_client_secrets_file(GDRAT_abs_path, scopes=scopes)
+    credentials = flow.run_local_server()
+    service = build("calendar", "v3", credentials=credentials)
+
+    event_request_body = {
+            'start' : {
+                'dateTime' : start.isoformat(),
+                'timeZone' : 'Asia/Kolkata'
+            },
+            'end' : {
+                'dateTime' : (start + timedelta(minutes=45)).isoformat(),
+                'timeZone' : 'Asia/Kolkata'
+            },
+            'summary' : 'Patient Appointment',
+            'description' : appointment.Patient.First_Name + " "+ appointment.Patient.Last_Name + "'s Appointment",
+            'colorId' : '4',
+            'status' : 'confirmed',
+            
+    }
+    response3 = service.events().insert(
+            calendarId='primary', body=event_request_body
+    ).execute()
+    
+    appointment.Status = "Confirmed"
+    appointment.save()
+   
+    return redirect('appointmentdetails')
