@@ -5,17 +5,19 @@ from store.models import *
 from django.contrib.auth import authenticate, login, logout
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required
+import datetime
 
 
 
-from google_auth_oauthlib.flow import Flow, InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-from google.auth.transport.requests import Request
-import pytz
-from google.oauth2 import service_account
 
-import os
+# from google_auth_oauthlib.flow import Flow, InstalledAppFlow
+# from googleapiclient.discovery import build
+# from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+# from google.auth.transport.requests import Request
+# import pytz
+# from google.oauth2 import service_account
+
+# import os
 
 
 
@@ -360,7 +362,17 @@ def doctorlist(request):
 
 @login_required
 def appointment_form(request,id):
+
+    # print(Appointment.objects.all().first())
+    doc_details = Appointment.objects.all().first()
+
+    print(doc_details.doctor,doc_details.required_speciality,doc_details.date_of_appointment,doc_details.start_time)
+
+
+
+
     if request.method == "POST":
+
         speciality = request.POST.get('speciality')
         appointmentdate = request.POST.get('appointmentdate')
         appointmenttime = request.POST.get('appointmenttime')
@@ -368,8 +380,20 @@ def appointment_form(request,id):
         doctor = Doctor.objects.filter(id=id).first()
 
         appointment = Appointment(doctor=doctor,required_speciality=speciality,date_of_appointment=appointmentdate,start_time=appointmenttime)
-        
+
+        # from store.google_cal import maine
+
+        # maine(doctor,speciality,appointmentdate,appointmenttime)
+
+        print(doctor,speciality,appointmentdate,appointmenttime)
+
         appointment.save()
+
+
+        try:
+            pass
+        except Exception as e:
+            print(e)
 
         request.session['doctor_id'] = doctor.id
         request.session['appointment_id'] = appointment.id
@@ -393,16 +417,14 @@ def appointmentdetails(request):
     end_time_of_appointment = sumTime(str(appointment.start_time), '00:45:00')
     context = {'doctor': doctor, 'appointment': appointment, 'start_time_of_appointment': start_time_of_appointment, 'end_time_of_appointment': end_time_of_appointment}
 
-    
 
     return render(request, 'appointment/appointmentdetails.html', context)
 
     return render(request, 'appointment/appointmentdetails.html')
 
 def sumTime(t1, t2):
-    import datetime
     timeList = [t1, t2]
-    mysum = datetime.timedelta() # =0:00:00
+    mysum = datetime.timedelta() 
     for i in timeList:
         (h, m, s) = i.split(':')
         d = datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
@@ -411,50 +433,84 @@ def sumTime(t1, t2):
 
 
 
-def Confirm_appointment(request):
-    appointment_id = request.GET.get('id')
-    appointment = Appointment.objects.get(id=appointment_id)
-   
-    print("----------------------------------")
 
-    start = datetime(
-        appointment.Date_of_Appointment.year,
-        appointment.Date_of_Appointment.month,
-        appointment.Date_of_Appointment.day,
-        appointment.Start_Time_of_Appointment.hour,
-        appointment.Start_Time_of_Appointment.minute,
-        appointment.Start_Time_of_Appointment.second,
-        appointment.Start_Time_of_Appointment.microsecond,
+# GOOOGLE CALENDAR
 
 
-    )
-    
-    GDRAT_abs_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'client_secret.json')
-    scopes = ['https://www.googleapis.com/auth/calendar']
-    flow = InstalledAppFlow.from_client_secrets_file(GDRAT_abs_path, scopes=scopes)
-    credentials = flow.run_local_server()
-    service = build("calendar", "v3", credentials=credentials)
+import datetime
+import pickle
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 
-    event_request_body = {
-            'start' : {
-                'dateTime' : start.isoformat(),
-                'timeZone' : 'Asia/Kolkata'
-            },
-            'end' : {
-                'dateTime' : (start + timedelta(minutes=45)).isoformat(),
-                'timeZone' : 'Asia/Kolkata'
-            },
-            'summary' : 'Patient Appointment',
-            'description' : appointment.Patient.First_Name + " "+ appointment.Patient.Last_Name + "'s Appointment",
-            'colorId' : '4',
-            'status' : 'confirmed',
-            
-    }
-    response3 = service.events().insert(
-            calendarId='primary', body=event_request_body
-    ).execute()
-    
-    appointment.Status = "Confirmed"
-    appointment.save()
-   
-    return redirect('appointmentdetails')
+# If modifying these scopes, delete the file token.pickle.
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+CREDENTIALS_FILE = 'credentials.json'
+
+def get_calendar_service():
+   creds = None
+   # The file token.pickle stores the user's access and refresh tokens, and is
+   # created automatically when the authorization flow completes for the first
+   # time.
+   if os.path.exists('token.pickle'):
+       with open('token.pickle', 'rb') as token:
+           creds = pickle.load(token)
+   # If there are no (valid) credentials available, let the user log in.
+   if not creds or not creds.valid:
+       if creds and creds.expired and creds.refresh_token:
+           creds.refresh(Request())
+       else:
+           flow = InstalledAppFlow.from_client_secrets_file(
+               CREDENTIALS_FILE, SCOPES)
+           creds = flow.run_local_server(port=0)
+
+       # Save the credentials for the next run
+       with open('token.pickle', 'wb') as token:
+           pickle.dump(creds, token)
+
+   service = build('calendar', 'v3', credentials=creds)
+   print("all done...")
+   return service
+
+# get_calendar_service()
+
+
+# CREATE EVENT
+
+from datetime import datetime, timedelta
+# from cal_setup import get_calendar_service
+
+
+def maine(doctor,speciality,appointmentdate,appointmenttime):
+   # creates one hour event tomorrow 10 AM IST
+   service = get_calendar_service()
+   print(doctor,speciality,appointmentdate,appointmenttime)
+#    d = datetime.now().date()
+#    tomorrow = datetime(d.year, d.month, d.day, 10)+timedelta(days=2)
+#    start = tomorrow.isoformat()
+#    end = (tomorrow + timedelta(minutes=45)).isoformat()
+
+   d = datetime.now().date()
+   tomorrow = datetime(d.year, d.month, d.day, 10)+timedelta(days=2)
+   start = tomorrow.isoformat()
+   end = (tomorrow + timedelta(minutes=45)).isoformat()
+
+   event_result = service.events().insert(calendarId='primary',
+       body={
+           "summary": 'Automating calendar',
+           "description": 'This is a tutorial example of automating google calendar with python',
+           "start": {"dateTime": start, "timeZone": 'Asia/Kolkata'},
+           "end": {"dateTime": end, "timeZone": 'Asia/Kolkata'},
+       }
+   ).execute()
+
+   print("created event")
+   print("id: ", event_result['id'])
+   print("summary: ", event_result['summary'])
+   print("starts at: ", event_result['start']['dateTime'])
+   print("ends at: ", event_result['end']['dateTime'])
+
+# if __name__ == '__main__':
+#    main()
