@@ -51,8 +51,8 @@ class Blogpost(models.Model):
 class Appointment(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     required_speciality = models.CharField(max_length=500)
-    date_of_appointment = models.DateField(auto_now=False,auto_now_add=False)
-    start_time = models.TimeField(auto_now=False,auto_now_add=False)
+    datetime_of_appointment = models.DateTimeField(auto_now=False,auto_now_add=False)
+    # start_time = models.TimeField(auto_now=False,auto_now_add=False)
 
     def __str__(self):
         return self.doctor.user.first_name

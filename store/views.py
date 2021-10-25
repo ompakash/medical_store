@@ -5,10 +5,29 @@ from store.models import *
 from django.contrib.auth import authenticate, login, logout
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required
-import datetime
 
 
+# Original answer said:
+from django.templatetags.static import static
+# Improved answer (thanks @Kenial, see below)
+# from django.contrib.staticfiles.templatetags.staticfiles import static
 
+# url now contains '/static/x.jpg', assuming a static path of '/static/'
+
+
+# import datetime
+
+from datetime import datetime,timedelta
+
+
+# import datetime
+import pickle
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+import json
+import os
 
 # from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 # from googleapiclient.discovery import build
@@ -19,11 +38,38 @@ import datetime
 
 # import os
 
-
+# from store.google_cal import get_calendar_service
 
 # Create your views here.
 
+
+def cred():
+    credentials =    {
+    "installed": {
+        "client_id": "1002660884057-r908c8n3t3eu870vn58uk91gcfivu7ci.apps.googleusercontent.com",
+        "project_id": "quickstart-330016",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_secret": "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",
+        "redirect_uris": [
+            "urn:ietf:wg:oauth:2.0:oob",
+            "http://localhost"
+        ]
+    }
+}
+    credentials1 = json.dumps(credentials)
+    print(credentials1)
+
+    return credentials1
+
+
+
 def home(request):
+    
+ 
+    # get_calendar_service()
+
     return render(request, template_name="store/home.html")
 
 
@@ -362,38 +408,23 @@ def doctorlist(request):
 
 @login_required
 def appointment_form(request,id):
-
-    # print(Appointment.objects.all().first())
-    doc_details = Appointment.objects.all().first()
-
-    print(doc_details.doctor,doc_details.required_speciality,doc_details.date_of_appointment,doc_details.start_time)
-
-
-
-
     if request.method == "POST":
 
         speciality = request.POST.get('speciality')
-        appointmentdate = request.POST.get('appointmentdate')
-        appointmenttime = request.POST.get('appointmenttime')
+        appointmentdatetime = request.POST.get('appointmentdatetime')
 
         doctor = Doctor.objects.filter(id=id).first()
+        print(doctor,speciality,appointmentdatetime)
 
-        appointment = Appointment(doctor=doctor,required_speciality=speciality,date_of_appointment=appointmentdate,start_time=appointmenttime)
-
-        # from store.google_cal import maine
-
-        # maine(doctor,speciality,appointmentdate,appointmenttime)
-
-        print(doctor,speciality,appointmentdate,appointmenttime)
+        appointment = Appointment(doctor=doctor,required_speciality=speciality,datetime_of_appointment=appointmentdatetime)
 
         appointment.save()
+        # print(appointment.datetime_of_appointment.time())
+        # print(appointment.datetime_of_appointment.time)
+        # print(appointment.datetime_of_appointment)
+        
 
-
-        try:
-            pass
-        except Exception as e:
-            print(e)
+        
 
         request.session['doctor_id'] = doctor.id
         request.session['appointment_id'] = appointment.id
@@ -409,13 +440,34 @@ def appointment_form(request,id):
 
 @login_required
 def appointmentdetails(request):
+
+
     doctor_id = request.session['doctor_id']     
     appointment_id = request.session['appointment_id']     
     doctor = Doctor.objects.filter(id=doctor_id).first()
     appointment = Appointment.objects.filter(id=appointment_id).first()
-    start_time_of_appointment = str(appointment.start_time)
-    end_time_of_appointment = sumTime(str(appointment.start_time), '00:45:00')
-    context = {'doctor': doctor, 'appointment': appointment, 'start_time_of_appointment': start_time_of_appointment, 'end_time_of_appointment': end_time_of_appointment}
+    # start_time_of_appointment = str(appointment.start_time)
+    # end_time_of_appointment = sumTime(str(appointment.start_time), '00:45:00')
+    date_of_appointment = appointment.datetime_of_appointment.date
+    start_time = f"{appointment.datetime_of_appointment.hour}:{appointment.datetime_of_appointment.minute}:00"
+    # print("START TIME ",start_time)
+    end_time = sumTime(str(start_time), '00:45:00')
+    # print("END TIME ",end_time)
+
+
+    context = {'doctor': doctor, 'appointment': appointment,'start_time':start_time,'end_time':end_time,'date_of_appointment':date_of_appointment}
+
+
+    try:
+        get_calendar_service()
+        # maine(doctor, speciality, start_time, end_time)
+    except Exception as e:
+        print(e)
+
+    # print(appointment.datetime_of_appointment)
+    # print(appointment.datetime_of_appointment.timestamp())
+    # print(appointment.datetime_of_appointment.hour)
+    # print(appointment.datetime_of_appointment.minute)
 
 
     return render(request, 'appointment/appointmentdetails.html', context)
@@ -424,10 +476,10 @@ def appointmentdetails(request):
 
 def sumTime(t1, t2):
     timeList = [t1, t2]
-    mysum = datetime.timedelta() 
+    mysum = timedelta() 
     for i in timeList:
         (h, m, s) = i.split(':')
-        d = datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+        d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
         mysum += d
     return str(mysum)
 
@@ -437,17 +489,30 @@ def sumTime(t1, t2):
 # GOOOGLE CALENDAR
 
 
-import datetime
-import pickle
-import os.path
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+# import datetime
+# import pickle
+# import os.path
+# from googleapiclient.discovery import build
+# from google_auth_oauthlib.flow import InstalledAppFlow
+# from google.auth.transport.requests import Request
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
-CREDENTIALS_FILE = 'credentials.json'
+# CREDENTIALS_FILE = cred()
+
+
+import json
+
+# json_data = open('/static/store/credentials.json')   
+# print('json',json_data)
+# data1 = json.load(json_data) # deserialises it
+# print('json1',data1)
+# data2 = json.dumps(data1) # json formatted string
+# print('json2',data2)
+
+# json_data.close()
+
 
 def get_calendar_service():
    creds = None
@@ -477,40 +542,38 @@ def get_calendar_service():
 # get_calendar_service()
 
 
-# CREATE EVENT
+# # CREATE EVENT
 
-from datetime import datetime, timedelta
-# from cal_setup import get_calendar_service
+# # from datetime import datetime, timedelta
+# # from cal_setup import get_calendar_service
 
 
-def maine(doctor,speciality,appointmentdate,appointmenttime):
-   # creates one hour event tomorrow 10 AM IST
-   service = get_calendar_service()
-   print(doctor,speciality,appointmentdate,appointmenttime)
-#    d = datetime.now().date()
-#    tomorrow = datetime(d.year, d.month, d.day, 10)+timedelta(days=2)
-#    start = tomorrow.isoformat()
-#    end = (tomorrow + timedelta(minutes=45)).isoformat()
+# def maine(doctor,speciality,start_time,end_time):
+#    # creates one hour event tomorrow 10 AM IST
+#    service = get_calendar_service()
+#    print(doctor,speciality,appointmentdate,appointmenttime)
+# #    d = datetime.now().date()
+# #    tomorrow = datetime(d.year, d.month, d.day, 10)+timedelta(days=2)
+# #    start = tomorrow.isoformat()
+# #    end = (tomorrow + timedelta(minutes=45)).isoformat()
 
-   d = datetime.now().date()
-   tomorrow = datetime(d.year, d.month, d.day, 10)+timedelta(days=2)
-   start = tomorrow.isoformat()
-   end = (tomorrow + timedelta(minutes=45)).isoformat()
+#    start = start_time 
+#    end = end_time
 
-   event_result = service.events().insert(calendarId='primary',
-       body={
-           "summary": 'Automating calendar',
-           "description": 'This is a tutorial example of automating google calendar with python',
-           "start": {"dateTime": start, "timeZone": 'Asia/Kolkata'},
-           "end": {"dateTime": end, "timeZone": 'Asia/Kolkata'},
-       }
-   ).execute()
+#    event_result = service.events().insert(calendarId='primary',
+#        body={
+#            "summary": doctor,
+#            "description": speciality,
+#            "start": {"dateTime": start, "timeZone": 'Asia/Kolkata'},
+#            "end": {"dateTime": end, "timeZone": 'Asia/Kolkata'},
+#        }
+#    ).execute()
 
-   print("created event")
-   print("id: ", event_result['id'])
-   print("summary: ", event_result['summary'])
-   print("starts at: ", event_result['start']['dateTime'])
-   print("ends at: ", event_result['end']['dateTime'])
+#    print("created event")
+#    print("id: ", event_result['id'])
+#    print("summary: ", event_result['summary'])
+#    print("starts at: ", event_result['start']['dateTime'])
+#    print("ends at: ", event_result['end']['dateTime'])
 
-# if __name__ == '__main__':
-#    main()
+# # if __name__ == '__main__':
+# #    main()

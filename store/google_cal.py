@@ -8,7 +8,11 @@ from google.auth.transport.requests import Request
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
-CREDENTIALS_FILE = 'credentials.json'
+
+with open('credentials.json', 'rb') as token:
+    creds = pickle.load(token)
+
+CREDENTIALS_FILE = creds
 
 def get_calendar_service():
    creds = None
@@ -18,6 +22,7 @@ def get_calendar_service():
    if os.path.exists('token.pickle'):
        with open('token.pickle', 'rb') as token:
            creds = pickle.load(token)
+       
    # If there are no (valid) credentials available, let the user log in.
    if not creds or not creds.valid:
        if creds and creds.expired and creds.refresh_token:
@@ -35,7 +40,7 @@ def get_calendar_service():
    print("all done...")
    return service
 
-# get_calendar_service()
+get_calendar_service()
 
 
 # CREATE EVENT

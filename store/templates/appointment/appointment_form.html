@@ -15,17 +15,17 @@
 
 
         <div class=" mx-2 form-group my-2">
-            <p>Appointment Date</p>
+            <p>Appointment Date and Time</p>
 
-            <input type="date" class="form-control" name="appointmentdate" placeholder="Enter Required Speciality"
+            <input type="datetime-local" class="form-control" name="appointmentdatetime" placeholder="Enter Required Speciality"
                 required>
         </div>
-
+{% comment %} 
         <div class="md-form mx-2 my-2">
             <label class="mx-2 my-2" for="time">Choose your time</label>
 
             <input type="time" id="times" name="appointmenttime" class="form-control" required>
-          </div>
+          </div> {% endcomment %}
 
         <div class="col-12 mb-3 mx-2 mt-2 my-2 d-grid gap-2 ">
             <button type="submit" class="btn btn-success btn-xl">Book Appointment</button>
